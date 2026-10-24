@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><link rel="stylesheet" href="styles.css"><title>Your account | New Kamana Jewellers</title></head><body>
+<header class="top"><a class="brand" href="/">New Kamana Jewellers</a><nav style="display:block"><a href="/">Back to the shop</a></nav></header>
+<main class="panel"><h1>Your account</h1>
+<div id="auth"><h2>Sign in</h2><form id="lf"><label>Email<input name="email" type="email" required autocomplete="email"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><button class="btn wa">Sign in</button></form>
+<h2>Create an account</h2><p>An account lets you see the status of your repair and custom order requests.</p>
+<form id="rf"><label>Your name<input name="name" required autocomplete="name"></label><label>Email<input name="email" type="email" required autocomplete="email"></label><label>Phone number (optional)<input name="phone" type="tel" autocomplete="tel"></label><label>Password (8 characters or more)<input name="password" type="password" minlength="8" required autocomplete="new-password"></label><button class="btn wa">Create account</button></form>
+<p class="err" id="err" role="alert"></p></div>
+<div id="acct" hidden><p id="hi"></p><p><a id="adm" class="btn ghost" href="/admin.html" hidden>Open admin</a><button class="btn ghost" id="out">Sign out</button></p><h2>Your requests</h2><ul class="list" id="mine"></ul></div></main>
+<script src="account.js"></script></body></html>

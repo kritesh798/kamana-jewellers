@@ -1,0 +1,9 @@
+{"categories":[{"id":"necklaces","label":"Necklaces and sets"},{"id":"earrings","label":"Earrings"},{"id":"rings","label":"Rings"},{"id":"bangles","label":"Bangles and bracelets"},{"id":"bridal","label":"Bridal"},{"id":"silver","label":"Silver items"}],
+"items":[
+{"id":"p1","name":"Placeholder: necklace set (TODO)","category":"necklaces","metal":"Gold","image":null,"alt":""},
+{"id":"p2","name":"Placeholder: earrings (TODO)","category":"earrings","metal":"Gold","image":null,"alt":""},
+{"id":"p3","name":"Placeholder: ring (TODO)","category":"rings","metal":"Gold","image":null,"alt":""},
+{"id":"p4","name":"Placeholder: bangles (TODO)","category":"bangles","metal":"Gold","image":null,"alt":""},
+{"id":"p5","name":"Placeholder: bridal set (TODO)","category":"bridal","metal":"Gold","image":null,"alt":""},
+{"id":"p6","name":"Placeholder: silver item (TODO)","category":"silver","metal":"Silver","image":null,"alt":""}],
+"_howto":"Each item: id, name, category (one of the ids above), metal, optional purity and weight_tola, price (omit for 'Price on request'), image (e.g. assets/photos/p1.webp), alt."}
