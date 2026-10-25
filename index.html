@@ -4,25 +4,34 @@
 <meta property="og:title" content="New Kamana Jewellers, Pokhara"><meta property="og:description" content="Gold and silver jewellery on New Road, Pokhara."><meta property="og:type" content="website">
 <!-- TODO: add og:image and og:url once the real photo and domain exist -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l12 14-12 14L4 16z' fill='%23c9973f'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=12">
 <script>var d=document.documentElement;d.className='js';window.__f=setTimeout(function(){d.classList.add('failsafe')},1500)</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"JewelryStore","name":"New Kamana Jewellers","address":{"@type":"PostalAddress","streetAddress":"Savagriha (Sabhagriha) Chowk, New Road","addressLocality":"Pokhara","addressRegion":"Gandaki Province","addressCountry":"NP"},"sameAs":["https://www.facebook.com/p/New-kamana-jewellers-100052047357141/","https://www.tiktok.com/@newkamanajewellers"]}</script>
 </head><body>
 <div id="banner" class="banner" hidden></div>
 <header class="top"><a class="brand" href="#top">New Kamana Jewellers</a>
-<nav aria-label="Main"><a href="#rate">Today's rate</a><a href="#collection">Collection</a><a href="#request">Order or repair</a><a href="#visit">Visit</a><a href="/account.html">Account</a></nav></header>
+<nav aria-label="Main"><a href="#rate">Today's rate</a><a href="#collection">Collection</a><a href="#request">Order or repair</a></nav>
+<button class="search-trigger" id="searchOpen" type="button" aria-expanded="false" aria-controls="searchPanel">
+<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.2 4.2"></path></svg><span>Search</span></button>
+<div class="search-panel" id="searchPanel" role="dialog" aria-label="Search jewellery" hidden>
+<form class="search-form" id="searchForm" role="search">
+<label class="visually-hidden" for="searchInput">Search jewellery</label><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.2 4.2"></path></svg>
+<input id="searchInput" type="search" placeholder="Search jewellery, metal, or category" autocomplete="off">
+<button id="searchClose" class="search-close" type="button">Close</button></form>
+<div class="search-body"><div class="search-options"><h2>Browse categories</h2><div class="search-categories" id="searchCategories"></div>
+<div class="search-matches" id="searchMatches" aria-live="polite"></div></div>
+<aside class="search-preview" id="searchPreview" aria-live="polite"><p>Loading collection…</p></aside></div>
+</div></header>
 
 <section class="hero" id="top">
 <div class="hero-par"><div class="hero-ptr"><div class="hero-zoom">
-<div class="hero-ph" role="img" aria-label="Placeholder for the shop's hero photo"><span>Hero photo placeholder (TODO: add real photo)</span></div>
-<!-- Real photo: replace .hero-ph with
-<img class="hero-img" src="assets/photos/hero-800.webp" srcset="assets/photos/hero-800.webp 800w, assets/photos/hero-1600.webp 1600w" sizes="100vw" width="1600" height="1000" alt="DESCRIBE THE PHOTO" fetchpriority="high"> -->
+<img class="hero-img" src="assets/photos/Bride_wearing_gold_jewellery_20261025115042.jpg" alt="Bride wearing gold bridal jewellery" fetchpriority="high">
 <div class="sparkles" id="sparkles" aria-hidden="true"></div></div>
 <div class="sweep" aria-hidden="true"></div></div></div>
 <div class="scrim"></div>
 <div class="hero-text"><div class="wrap">
-<h1><span class="ln"><span>Gold and silver jewellery</span></span><span class="ln"><span>on New Road, Pokhara.</span></span></h1>
-<p class="sub">Visit us at Savagriha Chowk, or message us on WhatsApp.</p>
+<h1><span class="ln"><span>Finest Jewellery</span></span><span class="ln"><span>In Pokhara.</span></span></h1>
+<p class="sub">Gold and Silver Jewellery Shop on sabagriha,pokhara. Explore a Curated and Coveted collection of Quality Gold and Silver items.</p>
 <p class="chip" id="heroRate">Hallmark gold per tola: <b>call for today's rate</b></p>
 <div class="cta"><a class="btn wa" data-wa href="https://wa.me/9779846032611?text=Hello%2C%20I%20found%20your%20website.">Message on WhatsApp</a><a class="btn call" data-call href="tel:+9779846032611">Call the shop</a></div>
 </div></div></section>
@@ -30,7 +39,7 @@
 <main>
 <section id="rate" class="rv"><div class="wrap narrow"><h2>Today's gold and silver rate</h2>
 <dl class="rates" id="rates"><div><dt>Hallmark gold, per tola</dt><dd>Call for rate</dd></div></dl>
-<p class="note" id="rateNote">Rates are indicative. Call to confirm before you visit.</p></div></section>
+<p class="note" id="rateNote">Rates are indicative. Hallmark gold is refreshed daily from the <a href="https://fenegosida.org/" target="_blank" rel="noopener noreferrer">Federation of Nepal Gold and Silver Dealers’ Association</a>. Call to confirm before you visit.</p></div></section>
 
 <section id="collection" class="rv alt"><div class="wrap"><h2>Collection</h2>
 <div class="filters" id="filters" role="group" aria-label="Filter by category"></div>
@@ -46,22 +55,26 @@
 <button class="btn wa" type="submit">Send repair request on WhatsApp</button>
 <p class="note" id="fallback" hidden>WhatsApp did not open? <a data-call href="tel:+9779846032611">Call the shop instead</a>.</p></form></div></section>
 
-<section id="visit" class="rv alt"><div class="wrap narrow"><h2>Visit us</h2>
-<p>Savagriha (Sabhagriha) Chowk, New Road, Pokhara, Kaski, Gandaki Province, Nepal</p>
-<p>Open <span data-hours>10:00 am to 6:00 pm</span></p>
-<p><a class="btn ghost" id="dir" href="https://www.google.com/maps/dir/?api=1&destination=28.2057,83.9960">Get directions</a> <a class="btn ghost" id="gmap" href="https://share.google/s4wfKjLbZa8TrUijY">Open on Google</a></p></div></section>
+<section id="location" class="location-map" aria-label="Shop location map">
+<iframe id="locationMap" title="Scrollable Google Map showing New Kamana Jewellers at Savagriha Chowk, Pokhara" src="https://www.google.com/maps?q=New+Kamana+Jewellers%2C+Savagriha+Chowk%2C+Pokhara%2C+Nepal&amp;output=embed" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+</section>
 
-<section id="follow" class="rv"><div class="wrap narrow"><h2>Follow the shop</h2>
-<p><a class="btn ghost" href="https://www.facebook.com/p/New-kamana-jewellers-100052047357141/">Facebook page</a> <a class="btn ghost" href="https://www.tiktok.com/@newkamanajewellers">TikTok videos</a></p>
-<ul class="vids" id="vids"></ul></div></section>
-
-<section id="about" class="rv alt"><div class="wrap narrow"><h2>About</h2>
-<p id="about-text">New Kamana Jewellers sells gold and silver jewellery on New Road, Pokhara. <!-- TODO: owner to supply the shop's story, year started, and what it is known for. -->
-</p></div></section>
+<section id="about" class="rv alt" aria-labelledby="about-title"><div class="about-layout wrap">
+<div class="about-image"><img src="assets/photos/shop-overview-camera.jpg" alt="Shop owner looking toward the camera inside New Kamana Jewellers, with jewellery displays around the shop" width="1200" height="900" loading="lazy"></div>
+<div class="about-copy"><p class="about-eyebrow">Our best pieces</p><h2 id="about-title">Your Jewellery Drawer,<br>Upgraded</h2>
+<p>Made for the finest weddings and the best festivals</p></div>
+</div></section>
 </main>
 
-<footer><div class="wrap"><p>New Kamana Jewellers, Savagriha Chowk, New Road, Pokhara</p>
-<div class="cta"><a class="btn wa" data-wa href="https://wa.me/9779846032611">Message on WhatsApp</a><a class="btn call" data-call href="tel:+9779846032611">Call the shop</a></div><p><a class="fl" href="/account.html">Sign in or create an account</a></p></div></footer>
+<footer><div class="footer-grid wrap">
+<section class="footer-shop" aria-labelledby="footerShop"><h2 id="footerShop">Kamana Jewellers</h2>
+<address><a data-directions href="https://www.google.com/maps/dir/?api=1&amp;destination=28.2057,83.9960">Savagriha Chowk<br>Pokhara, Kaski, Nepal</a></address>
+<a class="footer-phone" data-call href="tel:+9779846032611">+977 9846032611</a></section>
+<div class="footer-contact"><a class="btn wa" data-wa href="https://wa.me/9779846032611">Message us on WhatsApp</a></div>
+<section class="footer-hours" aria-labelledby="footerHours"><h2 id="footerHours">Hours</h2><p data-hours>10:00 am to 6:00 pm</p></section>
+<section class="footer-follow" aria-labelledby="footerFollow"><h2 id="footerFollow">Follow</h2>
+<div class="social-links"><a id="footerTikTok" href="https://www.tiktok.com/@newkamanajewellers" target="_blank" rel="noopener noreferrer" aria-label="Follow Kamana Jewellers on TikTok">♪ <span>TikTok</span></a><a id="footerFacebook" href="https://www.facebook.com/p/New-kamana-jewellers-100052047357141/" target="_blank" rel="noopener noreferrer" aria-label="Follow Kamana Jewellers on Facebook"><b aria-hidden="true">f</b> <span>Facebook</span></a></div></section>
+</div><div class="footer-bottom wrap"><span>New Kamana Jewellers · Pokhara, Nepal</span><span class="footer-copyright">© Kamana Jewellers. All rights reserved.</span></div></footer>
 <div class="bar"><a class="btn call" data-call href="tel:+9779846032611">Call</a><a class="btn wa" data-wa href="https://wa.me/9779846032611">WhatsApp</a></div>
 <dialog id="lb"><button class="x" id="lbx" aria-label="Close">Close</button><div id="lbc"></div></dialog>
-<script src="script.js" defer></script></body></html>
+<script src="script.js?v=5" defer></script></body></html>

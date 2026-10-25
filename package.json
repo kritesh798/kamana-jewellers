@@ -1,2 +1,2 @@
 {"name":"kamana-site","version":"1.0.0","type":"module","private":true,
-"scripts":{"start":"node server/server.js","create-admin":"node server/create-admin.js"},"engines":{"node":">=22.13"}}
+"scripts":{"start":"node server/server.js","create-admin":"node server/create-admin.js","test":"node test_search.js"},"engines":{"node":">=22.13"}}

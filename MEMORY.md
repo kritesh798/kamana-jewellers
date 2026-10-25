@@ -1,0 +1,2 @@
+- [New Kamana Jewellers](README.md) — full run guide, API surface, file roles; keep here as the canonical source of truth for structure and commands.
+- [CLAUDE.md](CLAUDE.md) — just created; project conventions and data contracts for this repo.
