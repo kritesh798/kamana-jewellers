@@ -18,8 +18,12 @@ For a live site set `NODE_ENV=production` (adds the Secure cookie flag, so serve
 - Admin page: update the rate (the update time is set by the server), add, edit and delete products, see requests and set their status, and list admin accounts.
 - Security: JSON-only writes with origin check, parameterised SQL, escaped output, strict Content-Security-Policy, only listed files are served (the database and `server/` are never public).
 
-## Deploy
-Needs a host that runs Node with a persistent disk (Render, Railway, Fly.io or a small VPS). GitHub Pages, Netlify static and Cloudflare Pages alone will not run the backend. Keep `server/data/` on the persistent disk and back it up. If you edit the inline script in `index.html`, restart the server (its CSP hash is computed at start).
+## Deploy to Render
+This project includes a Render Blueprint in `render.yaml`. Push the project to a GitHub repository, then in Render choose **New > Blueprint** and connect the repository. The Blueprint creates the Node web service and a 1 GB persistent disk mounted at `/var/data`; the SQLite database is stored there so it survives service restarts. Render's paid web-service and disk charges apply; check current pricing before deployment. The Node 22.13+ requirement is declared in `package.json`.
+
+After the first deploy, set a temporary `ADMIN_PASSWORD` environment variable in the Render service settings (use a unique password of at least 10 characters). Open the service Shell and run `node server/create-admin.js you@example.com "Your Name"` to create the first admin. Remove `ADMIN_PASSWORD` from the service environment after the command succeeds. Sign in at `/admin.html` and change or reset the password only through the documented admin CLI if needed.
+
+Back up the persistent disk regularly. GitHub Pages, Netlify static and Cloudflare Pages alone will not run this backend. If you edit the inline script in `index.html`, restart the server (its CSP hash is computed at start).
 
 ## Images
 The hero uses the static image `assets/photos/Bride_wearing_gold_jewellery_20261025115042.jpg`; the About section uses `assets/photos/shop-overview-camera.jpg`, with the shop owner positioned on the left and copy on the right. The bridal photo is not listed as a product. Product photos are optimised JPEGs in `assets/photos/products/` and are listed with distinct descriptive names in `data/collection.json`; duplicate Tilhari views and numbered starter listings are consolidated. The uploaded shop-interior photos are kept in the source photo folder rather than shown as products. No ring photos were included, so the Rings category has no product listing yet. Product weights, purity and prices remain unpublished until confirmed. Sparkles are set up in `index.html` and `?place=1`. Contact details and opening hours stay in `data/site.json`.
