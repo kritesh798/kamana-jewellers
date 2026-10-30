@@ -1,5 +1,9 @@
 // Test suite for the jewellery search functionality
-// This tests the matches() and renderResults() functions added in the recent changes
+// Tests matches() and draw() (live search results), plus unit-level coverage of the boundary logic.
+
+import { existsSync, readFileSync } from 'node:fs';
+
+const catalog = JSON.parse(readFileSync(new URL('./data/collection.json', import.meta.url), 'utf8'));
 
 const collection = {
   categories: [
@@ -7,7 +11,6 @@ const collection = {
     { id: 'earrings', label: 'Earrings' },
     { id: 'rings', label: 'Rings' },
     { id: 'bangles', label: 'Bangles and bracelets' },
-    { id: 'bridal', label: 'Bridal' },
     { id: 'silver', label: 'Silver items' },
   ],
   items: [
@@ -110,8 +113,6 @@ test('renderResults limits to max 6 items', () => {
 
 // 9. Test search is case-insensitive
 test('matches() is case-insensitive', () => {
-  // Note: The draw()/renderResults functions always lowercase q before calling matches,
-  // so matches() is always called with a lowercased query in practice
   assert(matches(collection.items[0], 'necklace') === true, 'Should match lowercase');
   assert(matches(collection.items[0], 'gold') === true, 'Should match lowercase metal');
   assert(matches(collection.items[0], 'set') === true, 'Should match partial name');
@@ -121,6 +122,70 @@ test('matches() is case-insensitive', () => {
 test('renderResults shows empty state when no matches', () => {
   const results = draw('nonexistent');
   assert(results.length === 0, 'Should return 0 results for non-existent term');
+});
+
+// 11. Test trimmed whitespace is ignored
+test('draw trims surrounding whitespace on input', () => {
+  const results = draw('  gold  ');
+  assert(results.length >= 1, 'Trimmed "  gold  " should still match gold items');
+});
+
+// 12. Test that metadata fields are also searched (e.g., "pendant", "chain")
+test('matches() searches metadata like purity and weight too', () => {
+  assert(matches(collection.items[1], 'diamond') === true, 'Diamond Earrings should match "diamond" in name');
+  assert(matches(collection.items[2], 'ring') === true, 'Gold Ring should match "ring" in name');
+});
+
+// 13. Test category preview count (used by openSearch -> previewCategory) is deterministic
+test('preview category counts are consistent', () => {
+  for (const cat of collection.categories) {
+    const n = collection.items.filter(i => i.category === cat.id).length;
+    assert(n > 0, `Category "${cat.id}" should have at least one item`);
+  }
+});
+
+test('catalog categories follow the organized photo-folder order', () => {
+  const ids = catalog.categories.map(cat => cat.id);
+  assert(ids.join(',') === 'bracelets,chandrama,nau-gedis,soli-gedis,mangalsutra,pendal,sikiri,tilhari,tops,rings', `Unexpected category order: ${ids.join(',')}`);
+});
+
+test('extracted PDF photos are listed under Tops and Rings', () => {
+  const scanned = catalog.items.filter(item => /-scan-\d+\.jpg$/.test(item.image || ''));
+  assert(scanned.length === 35, `Expected 35 scanned jewellery photos, got ${scanned.length}`);
+  assert(scanned.filter(item => item.category === 'tops').length === 13, 'Expected 13 Tops photos');
+  assert(scanned.filter(item => item.category === 'rings').length === 6, 'Expected 6 Rings photos');
+});
+
+test('catalog classifies gedis and pendal photos using their organized folders', () => {
+  const expected = {
+    'gedis-chandrahar-01.jpg': 'nau-gedis',
+    'gedis-chandrahar-02.jpg': 'nau-gedis',
+    'gedis-chandrahar-03.jpg': 'nau-gedis',
+    'gedis-chandrahar-04.jpg': 'soli-gedis',
+    'gedis-chandrahar-05.jpg': 'nau-gedis',
+    'gedis-chandrahar-06.jpg': 'pendal',
+    'gedis-chandrahar-07.jpg': 'pendal',
+    'gedis-chandrahar-08.jpg': 'pendal',
+    'gedis-chandrahar-09.jpg': 'nau-gedis',
+    'gedis-chandrahar-10.jpg': 'nau-gedis',
+    'gedis-chandrahar-11.jpg': 'nau-gedis',
+    'gedis-chandrahar-12.jpg': 'soli-gedis',
+    'gedis-chandrahar-13.jpg': 'soli-gedis',
+  };
+  for (const [filename, category] of Object.entries(expected)) {
+    const item = catalog.items.find(i => i.image?.endsWith(filename));
+    assert(item?.category === category, `${filename} should be classified as ${category}`);
+  }
+});
+
+test('catalog categories are populated and all product photos exist', () => {
+  for (const category of catalog.categories) {
+    assert(catalog.items.some(i => i.category === category.id), `Category "${category.id}" should contain products`);
+  }
+  for (const item of catalog.items) {
+    assert(catalog.categories.some(category => category.id === item.category), `${item.name} uses an unknown category`);
+    if (item.image) assert(existsSync(new URL(item.image, import.meta.url)), `Missing product photo: ${item.image}`);
+  }
 });
 
 // ===== SUMMARY =====

@@ -34,7 +34,7 @@ export function scheduleDailyRates(){
 const now=new Date(),parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
 timeZone:'Asia/Kathmandu',year:'numeric',month:'numeric',day:'numeric'
 }).formatToParts(now).map(x=>[x.type,x.value]));
-let next=Date.UTC(+parts.year,+parts.month-1,+parts.day,12)-345*60*1000;
+let next=Date.UTC(+parts.year,+parts.month-1,+parts.day,10)-345*60*1000;
 if(next<=now.getTime())next+=DAY;
 const timer=setTimeout(()=>{void refreshDailyRates();scheduleDailyRates()},next-now.getTime());
 timer.unref();

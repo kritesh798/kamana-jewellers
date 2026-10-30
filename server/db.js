@@ -1,7 +1,8 @@
-import {DatabaseSync} from 'node:sqlite';import crypto from 'node:crypto';import fs from 'node:fs';import {fileURLToPath} from 'node:url';
+import {DatabaseSync} from 'node:sqlite';import crypto from 'node:crypto';import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
 export const ROOT=fileURLToPath(new URL('..',import.meta.url));
-fs.mkdirSync(ROOT+'server/data',{recursive:true});
-export const db=new DatabaseSync(process.env.DB_PATH||ROOT+'server/data/kamana.db');
+const DB_PATH=process.env.DB_PATH||ROOT+'server/data/kamana.db';
+fs.mkdirSync(path.dirname(DB_PATH),{recursive:true});
+export const db=new DatabaseSync(DB_PATH);
 db.exec(`PRAGMA journal_mode=WAL;PRAGMA foreign_keys=ON;
 CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL UNIQUE,phone TEXT,pass TEXT NOT NULL,role TEXT NOT NULL DEFAULT 'user',created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
@@ -15,7 +16,6 @@ if(!getS('categories')){const c=JSON.parse(fs.readFileSync(ROOT+'data/collection
 if(!db.prepare('SELECT 1 FROM products LIMIT 1').get()){const ins=db.prepare('INSERT INTO products(name,category,metal,purity,weight_tola,price,image,alt) VALUES(?,?,?,?,?,?,?,?)');
 c.items.forEach(i=>ins.run(i.name,i.category,i.metal||null,i.purity||null,i.weight_tola??null,i.price||null,i.image||null,i.alt||''))}}
 const catalog=JSON.parse(fs.readFileSync(ROOT+'data/collection.json','utf8'));
-if(JSON.stringify(JSON.parse(getS('categories')||'[]'))!==JSON.stringify(catalog.categories))setS('categories',catalog.categories);
 const originalPlaceholders=['Placeholder: necklace set (TODO)','Placeholder: earrings (TODO)','Placeholder: ring (TODO)','Placeholder: bangles (TODO)','Placeholder: bridal set (TODO)','Placeholder: silver item (TODO)'];
 const existingProducts=db.prepare('SELECT id,name,image FROM products').all();
 if(existingProducts.length===originalPlaceholders.length&&existingProducts.every(p=>originalPlaceholders.includes(p.name))){
@@ -38,6 +38,40 @@ if(hasNumberedSeed){
   db.exec('COMMIT')
  }catch(e){db.exec('ROLLBACK');throw e}
 }
+const classificationMigration='catalog-photo-classification-v1';
+if(!getS(classificationMigration)){
+ const update=db.prepare('UPDATE products SET category=? WHERE image=?');
+ db.exec('BEGIN');
+ try{
+  for(const item of catalog.items)if(item.image)update.run(item.category,item.image);
+  setS(classificationMigration,{applied_at:new Date().toISOString()});
+  db.exec('COMMIT')
+ }catch(e){db.exec('ROLLBACK');throw e}
+}
+const photoCategoryMigration='photo-catalog-categories-v1';
+if(!getS(photoCategoryMigration)){
+ const categories=JSON.parse(getS('categories')||'[]'),known=new Set(categories.map(c=>c.id));
+ for(const category of catalog.categories)if(!known.has(category.id)){categories.push(category);known.add(category.id)}
+ db.exec('BEGIN');
+ try{setS('categories',categories);setS(photoCategoryMigration,{applied_at:new Date().toISOString()});db.exec('COMMIT')}
+ catch(e){db.exec('ROLLBACK');throw e}
+}
+const pdfPhotoMigration='pdf-photo-products-v1';
+if(!getS(pdfPhotoMigration)){
+ const exists=db.prepare('SELECT 1 FROM products WHERE image=? LIMIT 1');
+ const insert=db.prepare('INSERT INTO products(name,category,metal,purity,weight_tola,price,image,alt) VALUES(?,?,?,?,?,?,?,?)');
+ db.exec('BEGIN');
+ try{
+  for(const item of catalog.items){
+   if(!/^assets\/photos\/products\/.*-scan-\d+\.jpg$/.test(item.image||'')||exists.get(item.image))continue;
+   insert.run(item.name,item.category,item.metal||null,item.purity||null,item.weight_tola??null,item.price||null,item.image,item.alt||'')
+  }
+  setS(pdfPhotoMigration,{applied_at:new Date().toISOString()});db.exec('COMMIT')
+ }catch(e){db.exec('ROLLBACK');throw e}
+}
 export const hashPw=p=>{const s=crypto.randomBytes(16);return s.toString('hex')+':'+crypto.scryptSync(p,s,64).toString('hex')};
 const DUMMY=hashPw('x');
-export const checkPw=(p,st)=>{const[s,h]=(st||DUMMY).split(':');const x=crypto.scryptSync(p,Buffer.from(s,'hex'),64);return crypto.timingSafeEqual(x,Buffer.from(h,'hex'))&&!!st};
+export const checkPw=(p,st)=>{const[ds,dh]=DUMMY.split(':'),[s,h,...rest]=typeof st==='string'?st.split(':'):[];
+const valid=rest.length===0&&/^[\da-f]{32}$/i.test(s||'')&&/^[\da-f]{128}$/i.test(h||'');
+const x=crypto.scryptSync(typeof p==='string'?p:'',Buffer.from(valid?s:ds,'hex'),64);
+return valid&&crypto.timingSafeEqual(x,Buffer.from(valid?h:dh,'hex'))};

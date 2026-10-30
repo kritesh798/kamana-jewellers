@@ -28,7 +28,7 @@ v.innerHTML=(h.video.webm?`<source src="${h.video.webm}" type="video/webm">`:'')
 const set=on=>{H.classList.toggle('paused',!on);if(v)on?v.play().catch(()=>{}):v.pause()};let vis=1;
 if('IntersectionObserver'in window)new IntersectionObserver(e=>{vis=e[0].isIntersecting;set(vis&&!document.hidden)}).observe(H);
 document.addEventListener('visibilitychange',()=>set(vis&&!document.hidden));
-if(fx&&matchMedia('(hover:hover) and (pointer:fine)').matches){let r;H.addEventListener('pointermove',e=>{if(r)return;r=requestAnimationFrame(()=>{r=0;const b=H.getBoundingClientRect();
+if(fx&&matchMedia('(hover:hover) and (pointer:fine)').matches){let r;const visual=$('.hero-par');visual.addEventListener('pointermove',e=>{if(r)return;r=requestAnimationFrame(()=>{r=0;const b=visual.getBoundingClientRect();
 H.style.setProperty('--px',((e.clientX-b.left)/b.width-.5)*-24);H.style.setProperty('--py',((e.clientY-b.top)/b.height-.5)*-24)})})}
 if(/[?&]place=1/.test(location.search))H.addEventListener('click',e=>{const b=H.getBoundingClientRect(),x=+((e.clientX-b.left)/b.width*100).toFixed(1),y=+((e.clientY-b.top)/b.height*100).toFixed(1);
 console.log(`{"x":${x},"y":${y},"size":16,"delay":0}`);alert(`x ${x}, y ${y} (also in console)`)})}
