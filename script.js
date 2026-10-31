@@ -2,20 +2,9 @@
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)],D=document.documentElement;
 const cn=navigator.connection||{},lite=cn.saveData||/^(2g|3g|slow-2g)$/.test(cn.effectiveType||''),
 reduce=matchMedia('(prefers-reduced-motion:reduce)').matches,J=u=>fetch(u).then(r=>{if(!r.ok)throw 0;return r.json()}).catch(()=>null),JF=(a,b)=>J(a).then(x=>x||J(b)),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const rateSource='https://api.fenegosida.org/api/website/v1/Dashboard/today',goldRateType='छापावाल सुन (१ तोला)',silverRateType='असली चाँदी दर (१ तोला)',
-nepalDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kathmandu',year:'numeric',month:'2-digit',day:'2-digit'}),
+const nepalDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kathmandu',year:'numeric',month:'2-digit',day:'2-digit'}),
 dateKey=d=>nepalDate.format(d);
-async function ratesData(){const R=await J('/api/rates')||await J('data/rates.json');if(!R)return null;
-if(R.hallmark_gold!=null&&R.silver!=null&&R.updated_at&&dateKey(new Date(R.updated_at))===dateKey(new Date()))return R;
-try{const response=await fetch(rateSource,{headers:{accept:'application/json'},signal:AbortSignal.timeout(10000)});
-if(!response.ok)throw Error(`HTTP ${response.status}`);
-const records=await response.json(),findRate=type=>Array.isArray(records)?records.find(x=>x.rateType===type):null,
-gold=findRate(goldRateType),silver=findRate(silverRateType),goldAmount=Number(gold?.todayBaseRatePerGram),
-silverAmount=Number(silver?.todayBaseRatePerGram),updatedAt=new Date(gold?.todayDate),silverUpdatedAt=new Date(silver?.todayDate);
-if(!(goldAmount>0&&goldAmount<1e8&&Number.isFinite(goldAmount)&&silverAmount>0&&silverAmount<1e8&&Number.isFinite(silverAmount)&&
-Number.isFinite(updatedAt.getTime())&&updatedAt.getTime()===silverUpdatedAt.getTime())||dateKey(updatedAt)!==dateKey(new Date()))throw Error('No valid gold and silver rates published for today in Nepal');
-return{...R,hallmark_gold:goldAmount,silver:silverAmount,updated_at:updatedAt.toISOString(),updated_bs:''}
-}catch(e){console.warn('Could not load today’s gold and silver rates from the Federation; showing the last saved rates if available.',e);return R}}
+async function ratesData(){return await J('/api/rates')||await J('data/rates.json')}
 if(lite)D.classList.add('lite');
 /* ---- HERO (keep under 6 KB minified) ---- */
 const H=$('.hero');
@@ -46,7 +35,7 @@ const b=S.banner;if(b&&b.enabled&&b.text){const e=$('#banner');e.textContent=b.t
 function rates(R){const f=n=>n==null?'Call for rate':'NPR '+Number(n).toLocaleString('en-IN'),rows=[['Hallmark gold',R.hallmark_gold]];
 if(R.tejabi_gold!=null)rows.push(['Tejabi gold',R.tejabi_gold]);rows.push(['Silver',R.silver]);
 $('#rates').innerHTML=rows.map(r=>`<div><dt>${r[0]}, per ${R.unit||'tola'}</dt><dd>${f(r[1])}</dd></div>`).join('');
-let t='',old=true;if(R.updated_at){const d=new Date(R.updated_at);old=Date.now()-d>864e5;
+let t='',old=true;if(R.updated_at){const d=new Date(R.updated_at);old=dateKey(d)!==dateKey(new Date());
 t='Updated '+(dateKey(d)===dateKey(new Date())?'today':dateKey(d)===dateKey(new Date(Date.now()-864e5))?'yesterday':d.toLocaleDateString('en-GB',{dateStyle:'medium',timeZone:'Asia/Kathmandu'}))}
 $('#rateNote').innerHTML=(t?t+'. ':'')+'Rates are indicative. Hallmark gold is refreshed daily from the <a href="https://fenegosida.org/" target="_blank" rel="noopener noreferrer">Federation of Nepal Gold and Silver Dealers’ Association</a>.'+(old?' <span class="warn">This rate may be out of date. Call to confirm.</span>':' Call to confirm before you visit.');
 if(R.hallmark_gold!=null)$('#heroRate').innerHTML=`Hallmark gold per tola: <b>${f(R.hallmark_gold)}</b>${t?' · '+t.replace(/\(.*\)/,''):''}`}

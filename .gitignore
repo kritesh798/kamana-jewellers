@@ -1,5 +1,7 @@
 server/data/
 node_modules/
+.cloudflare-assets/
+.wrangler/
 .env
 
 # Secrets
