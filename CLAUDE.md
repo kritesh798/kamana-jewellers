@@ -26,7 +26,7 @@ A gold and silver jewellery shop in Pokhara, Nepal, with a vanilla-JS frontend (
 | `data/collection.json` | Product categories include Bracelets, Chandrama, Nau gedis, Soli gedis, Mangalsutra, Pendal, Silver Sikiri, Tilhari, Tops and Rings. Catalog photos include optimized photos and JPEGs extracted from the product-photo PDFs. Seeds `products` on first boot; startup migrations add the photo categories and extracted products while preserving unrelated products. |
 | `assets/video/hero.mp4` / `hero.webm` | Hero background video. |
 | `test_search.js` | Node test suite for `matches()` / `draw()` using a bundled copy of `collection.json` (no DB or HTTP dependency). |
-| `robots.txt` | Allows public crawling and points to the absolute homepage sitemap. |
+| `robots.txt` | Allows public crawling and points to the absolute plain-text homepage sitemap. |
 
 ## Project structure
 

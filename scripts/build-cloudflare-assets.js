@@ -12,7 +12,7 @@ const copy=(source,destination=source)=>{
 };
 
 fs.rmSync(output,{recursive:true,force:true});
-for(const file of ['index.html','admin.html','styles.css','script.js','admin.js','robots.txt','sitemap.xml',
+for(const file of ['index.html','admin.html','styles.css','script.js','admin.js','robots.txt','sitemap.xml','sitemap.txt',
  'data/site.json','data/rates.json','data/collection.json'])copy(file);
 
 const site=readJson('data/site.json'),catalog=readJson('data/collection.json'),assets=new Set();

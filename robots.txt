@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://kamana-jewellers-site.expressicowebdesign.workers.dev/sitemap.xml
+Sitemap: https://kamana-jewellers-site.expressicowebdesign.workers.dev/sitemap.txt
