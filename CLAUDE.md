@@ -26,7 +26,7 @@ A gold and silver jewellery shop in Pokhara, Nepal, with a vanilla-JS frontend (
 | `data/collection.json` | Product categories include Bracelets, Chandrama, Nau gedis, Soli gedis, Mangalsutra, Pendal, Silver Sikiri, Tilhari, Tops and Rings. Catalog photos include optimized photos and JPEGs extracted from the product-photo PDFs. Seeds `products` on first boot; startup migrations add the photo categories and extracted products while preserving unrelated products. |
 | `assets/video/hero.mp4` / `hero.webm` | Hero background video. |
 | `test_search.js` | Node test suite for `matches()` / `draw()` using a bundled copy of `collection.json` (no DB or HTTP dependency). |
-| `robots.txt` | `Allow: /`; TODO add sitemap. |
+| `robots.txt` | Allows public crawling and points to the absolute homepage sitemap. |
 
 ## Project structure
 
@@ -142,7 +142,7 @@ Runs `test_search.js`, which bundles a copy of `collection.json` and tests `matc
 - Real hero and product photos, names, weights and purity; delete the 6 placeholder products in admin
 - Sparkle coordinates (`?place=1`), About text, TikTok video links
 - Verify map coordinates and replace the Google share link
-- Domain, sitemap, og:image and og:url
+- Replace the temporary workers.dev canonical/sitemap/share URLs after confirming a custom domain
 - Ask the owner before making any guarantee or hallmark claim
 - Customer phone numbers: add a short privacy note before launch
 - Browser testing, Lighthouse, screenshots at 375/768/1280 px

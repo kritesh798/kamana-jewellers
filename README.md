@@ -70,7 +70,7 @@ Email-based admin password recovery (admin passwords can be reset with the CLI),
 - Confirm product names, weights and purity; add ring photos when available
 - Sparkle coordinates (`?place=1`), About text, TikTok video links
 - Confirm the Google Maps listing after any shop relocation
-- Confirm the deployed domain before adding absolute canonical URLs, a sitemap, and social-sharing image and URL metadata
+- Replace the temporary workers.dev canonical URL, sitemap URL, and social-sharing metadata after confirming a custom domain
 - Ask the owner before making any guarantee or hallmark claim
 - Confirm the request privacy notice, data-retention process, and applicable privacy requirements before launch
 - Not yet run: browser testing, Lighthouse, screenshots at 375/768/1280 px
