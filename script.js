@@ -46,7 +46,11 @@ const meta=i=>[i.metal,i.purity,i.weight_tola&&i.weight_tola+' tola',i.price||'P
 const ask=i=>wa(`Hello, I'd like to ask about this piece: ${i.name} (${i.category}).`);
 function matches(i,q){const c=C.categories.find(x=>x.id===i.category);return [i.name,i.category,c?.label,i.metal,i.purity,i.weight_tola].some(v=>String(v??'').toLowerCase().includes(q))}
 function draw(){fl.innerHTML=cats.map(c=>`<button aria-pressed="${c.id==cur}" data-c="${esc(c.id)}">${esc(c.label)}</button>`).join('');
-const items=C.items.filter(i=>(cur=='all'||i.category==cur)&&(!term||matches(i,term)));
+const matching=C.items.filter(i=>(cur=='all'||i.category==cur)&&(!term||matches(i,term)));
+const items=cur==='all'?C.categories.map(c=>matching.find(i=>i.category===c.id)).filter(Boolean):matching;
+g.classList.toggle('all-categories',cur==='all');
+if(cur==='all'){g.tabIndex=0;g.setAttribute('aria-label','One featured item per category. Scroll to browse all categories.')}
+else{g.removeAttribute('tabindex');g.removeAttribute('aria-label')}
 g.innerHTML=items.length?items.map(i=>`<figure><button class="pic" data-i="${i.id}" aria-label="View ${esc(i.name)}">${i.image?pic(i):'Photo placeholder (TODO)'}</button><figcaption><h3>${esc(i.name)}</h3><p class="meta">${esc(meta(i))}</p><a class="btn ghost" href="${ask(i)}">Ask about this piece</a></figcaption></figure>`).join(''):'<p class="search-empty">No pieces match this search. Try another name or category.</p>'}
 function show(i){if(!i)return;$('#lbc').innerHTML=`${pic(i)}<h3>${esc(i.name)}</h3><p class="meta">${esc(meta(i))}</p><a class="btn wa" href="${ask(i)}">Ask about this piece</a>`;$('#lb').showModal()}
 fl.onclick=e=>{const b=e.target.closest('button[data-c]');if(b){cur=b.dataset.c;draw()}};

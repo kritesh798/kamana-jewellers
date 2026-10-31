@@ -36,6 +36,12 @@ function draw(term) {
   return found;
 }
 
+function drawAllCategories(items, categories, term = '') {
+  const q = term.trim().toLowerCase();
+  const matching = items.filter(i => !q || matches(i, q));
+  return categories.map(category => matching.find(i => i.category === category.id)).filter(Boolean);
+}
+
 // ===== TESTS =====
 
 let passed = 0;
@@ -142,6 +148,19 @@ test('preview category counts are consistent', () => {
     const n = collection.items.filter(i => i.category === cat.id).length;
     assert(n > 0, `Category "${cat.id}" should have at least one item`);
   }
+});
+
+test('All collection shows one item per category in category order', () => {
+  const items = [...collection.items, { ...collection.items[0], id: 'p7', name: 'Another necklace' }];
+  const featured = drawAllCategories(items, collection.categories);
+  assert(featured.length === collection.categories.length, 'Expected one featured item for every category');
+  assert(featured.every((item, index) => item.category === collection.categories[index].id), 'Featured items should follow category order');
+  assert(featured.filter(item => item.category === 'necklaces').length === 1, 'Expected only one necklace in the All view');
+});
+
+test('All collection search selects the first matching item in each category', () => {
+  const featured = drawAllCategories(collection.items, collection.categories, 'silver');
+  assert(featured.length === 1 && featured[0].category === 'silver', 'Search should only feature matching categories');
 });
 
 test('catalog categories follow the organized photo-folder order', () => {
