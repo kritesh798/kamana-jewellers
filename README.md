@@ -20,16 +20,15 @@ For a live site, set `NODE_ENV=production` and put the app behind an HTTPS rever
 
 ## Cloudflare Workers deployment
 
-The Cloudflare Worker is an alternative backend for the same frontend. It serves only a generated allowlist of public site files, uses D1 for products, categories, rates, admin accounts, sessions and requests, and refreshes the latest published Federation rates on the 10:00 Nepal-time cron. Existing catalog images are included as static assets. It does not need R2 for those committed images.
-
-Photo uploads are intentionally unavailable on this Worker until a persistent photo-storage option is chosen and configured. Do not subscribe to R2 or add a payment method as part of this setup without confirming billing first. The existing Node server continues to support uploads locally or on a suitable persistent host.
+The Cloudflare Worker is an alternative backend for the same frontend. It serves only a generated allowlist of public site files, uses D1 for products, categories, rates, admin accounts, sessions and requests, and refreshes the latest published Federation rates on the 10:00 Nepal-time cron. Existing catalog images are included as static assets. Admin-uploaded JPEG and PNG photos are committed to this GitHub repository under `assets/photos/uploads/` using a fine-grained GitHub token; the Worker serves them through a same-origin image route. Each upload creates a commit on `main`, which triggers the existing deployment workflow. Uploads are limited to 8 MB each and 20 per administrator per day, dimensions are capped at 20 megapixels, and common location/text metadata is removed. No R2 subscription or credit card is required. Repository size grows with uploaded photos, so keep uploads optimized and remove unused files from the repository when appropriate.
 
 To prepare the Worker:
 
 1. Install dependencies with `npm ci`, then authenticate Wrangler with `npx wrangler login`.
-2. Create a D1 database named `kamana-jewellers` in the Cloudflare dashboard or with `npx wrangler d1 create kamana-jewellers`. Copy its database ID into `wrangler.jsonc`. Creating resources or deploying to the live Worker should be done only after confirming the account's plan and billing.
-3. Apply the schema with `npm run db:migrate:cloudflare`.
-4. Generate the one-time admin SQL with `ADMIN_PASSWORD` set to a unique password of at least 10 characters, then run that SQL in the D1 dashboard console. For PowerShell:
+2. Create a D1 database named `kamana-jewellers` in the Cloudflare dashboard or with `npx wrangler d1 create kamana-jewellers`. Copy its database ID into `wrangler.jsonc`.
+3. Create a [fine-grained GitHub personal access token](https://github.com/settings/personal-access-tokens/new), restricted to the `kritesh798/kamana-jewellers` repository with **Contents: Read and write** permission. Do not paste the token into chat or commit it. From the project directory, run `npx wrangler secret put GITHUB_TOKEN` and paste it into the hidden terminal prompt. The Worker uses it only to add uploaded photos to the repository.
+4. Apply the schema with `npm run db:migrate:cloudflare`.
+5. Generate the one-time admin SQL with `ADMIN_PASSWORD` set to a unique password of at least 10 characters, then run that SQL in the D1 dashboard console. For PowerShell:
 
    ```powershell
    $env:ADMIN_PASSWORD = "use a unique password of at least 10 characters"
@@ -38,16 +37,16 @@ To prepare the Worker:
    ```
 
    The command outputs a PBKDF2 password hash in an `INSERT` statement; it never outputs the password. Do not commit the generated statement or paste it into chat.
-5. In Cloudflare Workers Builds, configure `npm run build:cloudflare` as the build command and `npm run deploy:cloudflare` as the deploy command. The D1 binding and ID must be set before the first deployment. Build output is generated under `.cloudflare-assets/`, which is ignored by Git and contains only the public files and media referenced by the shop.
+6. In Cloudflare Workers Builds, configure `npm run build:cloudflare` as the build command and `npm run deploy:cloudflare` as the deploy command. The D1 database ID must be set before the first deployment. Build output is generated under `.cloudflare-assets/`, which is ignored by Git and contains only the public files and media referenced by the shop.
 
-The initial D1 bootstrap seeds the static catalog and fallback rates on first API use. It does not import an existing local SQLite database, customer requests, locally created admin accounts or uploaded photos. Existing admin passwords use a different hash format; create a Cloudflare admin account as above. Run `npm test` to validate the Worker and existing Node backend before deployment.
+The initial D1 bootstrap seeds the static catalog and fallback rates on first API use. It does not import an existing local SQLite database, customer requests, locally created admin accounts or locally uploaded photos. Existing admin passwords use a different hash format; create a Cloudflare admin account as above. Photos already stored on the Node host are not automatically copied to GitHub. Run `npm test` to validate the Worker and existing Node backend before deployment.
 
 ### Automatic GitHub deployment
 
 The `.github/workflows/deploy-cloudflare.yml` workflow builds and deploys the Worker whenever changes are pushed to `main`, and can also be started manually from the repository's Actions tab. In the GitHub repository settings, add these Actions secrets:
 
 - `CLOUDFLARE_API_TOKEN`: a scoped token with Workers Scripts Edit, D1 Edit, and Account Settings Read for the account containing this Worker and database.
-The Cloudflare account ID is configured in `wrangler.jsonc`. The workflow installs dependencies, builds the static assets, applies any pending D1 migrations, and deploys the Worker. Changes must be committed and pushed to `main` for the automatic deployment to run. No Cloudflare Workers Builds setup or paid services are required.
+The Cloudflare account ID is configured in `wrangler.jsonc`. The workflow installs dependencies, builds the static assets, applies any pending D1 migrations, and deploys the Worker. Changes must be committed and pushed to `main` for the automatic deployment to run. No Cloudflare Workers Builds setup is required.
 
 ## Deploy on an Oracle Cloud Always Free VM
 The existing Node.js + SQLite app can run on an Oracle Cloud Always Free VM without changing its backend. Free VM capacity is not guaranteed, a payment card is required for identity verification, and Oracle may reclaim instances it classifies as idle; this is not an uptime guarantee. During signup and VM creation, select Always Free resources only and review the console's estimated cost before creating anything. Oracle's free allowances and policies can change.

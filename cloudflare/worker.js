@@ -1,7 +1,9 @@
 import {latestPublishedRates,nepalDateKey} from '../shared/rates.js';
 
-const DAY=864e5,MAX_BODY=20_000,RATE_SOURCE='https://api.fenegosida.org/api/website/v1/Dashboard/today',
+const DAY=864e5,MAX_BODY=20_000,MAX_PHOTO=8*1024*1024,
+RATE_SOURCE='https://api.fenegosida.org/api/website/v1/Dashboard/today',
 RATE_SYNC_INTERVAL=6*60*60*1000,PASSWORD_ITERATIONS=120_000,
+GITHUB_REPOSITORY='kritesh798/kamana-jewellers',GITHUB_BRANCH='main',
 REQUEST_TYPES=['Custom design','Repair','Resizing','Polishing','Old-gold exchange'],
 REQUEST_STATUSES=['new','in progress','done','cancelled'];
 const error=(status,message)=>Object.assign(new Error(message),{status});
@@ -14,6 +16,131 @@ const validRate=value=>{if(value===''||value==null)return null;const number=Numb
 const encode=value=>btoa(String.fromCharCode(...new Uint8Array(value))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const decode=value=>Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
 const digest=async value=>encode(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)));
+const photoKey=image=>/^media\/photos\/([\da-f-]+\.(?:jpg|png))$/.exec(image||'')?.[1]||null;
+const rawPhotoUrl=name=>`https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_BRANCH}/assets/photos/uploads/${name}`;
+const githubApi=(path,token,init={})=>fetch(`https://api.github.com${path}`,{
+ ...init,headers:{accept:'application/vnd.github+json',authorization:`Bearer ${token}`,
+  'X-GitHub-Api-Version':'2022-11-28','User-Agent':'kamana-jewellers-photo-uploader',...init.headers}
+});
+function base64(bytes){
+ let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+ return btoa(binary)
+}
+
+async function readPhoto(request){
+ const type=request.headers.get('content-type')||'';
+ if(!/^multipart\/form-data(?:;|$)/i.test(type))throw error(415,'Upload a JPEG or PNG photo.');
+ const length=Number(request.headers.get('content-length')||0);
+ if(length>MAX_PHOTO+8192)throw error(413,'Photo must be 8 MB or smaller.');
+ const reader=request.body?.getReader();
+ if(!reader)throw error(400,'Choose one photo to upload.');
+ const chunks=[];let size=0;
+ try{
+  while(true){
+   const {done,value}=await reader.read();if(done)break;
+   size+=value.byteLength;if(size>MAX_PHOTO+8192){await reader.cancel();throw error(413,'Photo must be 8 MB or smaller.')}
+   chunks.push(value)
+  }
+ }finally{reader.releaseLock()}
+ const body=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){body.set(chunk,offset);offset+=chunk.byteLength}
+ let form;
+ try{form=await new Request(request.url,{method:'POST',headers:request.headers,body}).formData()}
+ catch{throw error(400,'Invalid photo upload.')}
+ const photos=form.getAll('photo');
+ if(photos.length!==1||typeof photos[0]?.arrayBuffer!=='function'||[...form.keys()].some(key=>key!=='photo'))throw error(400,'Choose one photo to upload.');
+ const file=photos[0];if(!file.size)throw error(400,'The selected photo is empty.');
+ if(file.size>MAX_PHOTO)throw error(413,'Photo must be 8 MB or smaller.');
+ return new Uint8Array(await file.arrayBuffer())
+}
+
+function photoInfo(photo){
+ const view=new DataView(photo.buffer,photo.byteOffset,photo.byteLength),png=[137,80,78,71,13,10,26,10];
+ if(photo.length>=33&&png.every((byte,index)=>photo[index]===byte)&&String.fromCharCode(...photo.subarray(12,16))==='IHDR'){
+  const width=view.getUint32(16),height=view.getUint32(20);let i=8,ended=false;
+  while(i+12<=photo.length){
+   const length=view.getUint32(i),end=i+length+12;if(end>photo.length)throw error(400,'The PNG file is invalid.');
+   const type=String.fromCharCode(...photo.subarray(i+4,i+8));i=end;
+   if(type==='IEND'){ended=true;break}
+  }
+  if(!ended)throw error(400,'The PNG file is incomplete.');
+  return{ext:'png',width,height}
+ }
+ if(photo.length<4||photo[0]!==0xff||photo[1]!==0xd8||photo.at(-2)!==0xff||photo.at(-1)!==0xd9)throw error(415,'Only complete JPEG and PNG photos are supported.');
+ const sof=new Set([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf]);let i=2;
+ while(i+4<photo.length){
+  if(photo[i++]!==0xff)throw error(400,'The JPEG file is invalid.');
+  while(i<photo.length&&photo[i]===0xff)i++;
+  const marker=photo[i++];if(marker===0xda||marker===0xd9)break;
+  if(marker===0x01||(marker>=0xd0&&marker<=0xd7))continue;
+  if(i+2>photo.length)break;
+  const length=view.getUint16(i);if(length<2||i+length>photo.length)throw error(400,'The JPEG file is invalid.');
+  if(sof.has(marker)){if(length<7)throw error(400,'The JPEG file is invalid.');return{ext:'jpg',height:view.getUint16(i+3),width:view.getUint16(i+5)}}
+  i+=length
+ }
+ throw error(415,'The JPEG file has no supported image data.')
+}
+
+function stripPhotoMetadata(photo,ext){
+ if(ext==='jpg'){
+  const chunks=[photo.subarray(0,2)];let i=2,scan=false;
+  while(i<photo.length){
+   const start=i;if(photo[i++]!==0xff)throw error(400,'The JPEG file is invalid.');
+   while(i<photo.length&&photo[i]===0xff)i++;
+   const marker=photo[i++];if(marker===0xda){chunks.push(photo.subarray(start));scan=true;break}
+   if(marker===0xd9)throw error(400,'The JPEG file has no image data.');
+   if(marker===0x01||(marker>=0xd0&&marker<=0xd7)){chunks.push(photo.subarray(start,i));continue}
+   if(i+2>photo.length)throw error(400,'The JPEG file is invalid.');
+   const length=new DataView(photo.buffer,photo.byteOffset,photo.byteLength).getUint16(i),end=i+length;
+   if(length<2||end>photo.length)throw error(400,'The JPEG file is invalid.');
+   if(marker!==0xe1&&marker!==0xed&&marker!==0xfe)chunks.push(photo.subarray(start,end));
+   i=end
+  }
+  if(!scan)throw error(400,'The JPEG file has no image data.');
+  const size=chunks.reduce((total,chunk)=>total+chunk.length,0),result=new Uint8Array(size);let offset=0;
+  for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length}
+  return result
+ }
+ const chunks=[photo.subarray(0,8)],metadata=new Set(['eXIf','tEXt','zTXt','iTXt','tIME']);
+ const view=new DataView(photo.buffer,photo.byteOffset,photo.byteLength);let i=8,ended=false;
+ while(i+12<=photo.length){
+  const length=view.getUint32(i),end=i+length+12;if(end>photo.length)throw error(400,'The PNG file is invalid.');
+  const type=String.fromCharCode(...photo.subarray(i+4,i+8));if(!metadata.has(type))chunks.push(photo.subarray(i,end));
+  i=end;if(type==='IEND'){ended=true;break}
+ }
+ if(!ended)throw error(400,'The PNG file is incomplete.');
+ const size=chunks.reduce((total,chunk)=>total+chunk.length,0),result=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length}
+ return result
+}
+
+async function photoResponse(request,env){
+ if(request.method!=='GET')throw error(405,'Method not allowed.');
+ const match=/^\/media\/photos\/([\da-f-]+\.(?:jpg|png))$/.exec(new URL(request.url).pathname);
+ if(!match)throw error(404,'Not found.');
+ const upstream=await fetch(rawPhotoUrl(match[1]),{cf:{cacheEverything:true,cacheTtl:31536000}});
+ if(upstream.status===404)throw error(404,'Photo not found.');
+ if(!upstream.ok)throw error(502,'Could not retrieve the product photo from GitHub.');
+ return new Response(upstream.body,{headers:{'Content-Type':match[1].endsWith('.jpg')?'image/jpeg':'image/png',
+  'Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'}})
+}
+
+async function uploadPhoto(request,env,me){
+ if(!env.GITHUB_TOKEN)throw error(503,'GitHub photo storage is not configured.');
+ if(await limited(env,`photo:${me.id}`,20,DAY))throw error(429,'Photo upload limit reached. Try again tomorrow.');
+ const photo=await readPhoto(request),info=photoInfo(photo);
+ if(!(info.width>0&&info.height>0&&info.width*info.height<=20_000_000))throw error(400,'Photo dimensions must be no larger than 20 megapixels.');
+ const safePhoto=stripPhotoMetadata(photo,info.ext);
+ const name=`${crypto.randomUUID()}.${info.ext}`,filePath=`assets/photos/uploads/${name}`;
+ const response=await githubApi(`/repos/${GITHUB_REPOSITORY}/contents/${filePath}`,env.GITHUB_TOKEN,{
+  method:'PUT',body:JSON.stringify({message:`Upload product photo ${name}`,content:base64(safePhoto),branch:GITHUB_BRANCH})
+ });
+ if(!response.ok){
+  console.error(`GitHub photo upload failed with HTTP ${response.status}.`);
+  throw error(502,'Could not save the photo to GitHub. Check the repository token and try again.')
+ }
+ return json({image:`media/photos/${name}`},201)
+}
 
 async function seed(env){
  if(await setting(env,'cloudflare-seed-v1'))return;
@@ -105,15 +232,23 @@ async function productValues(body,env){
  if(weight!==null&&!(weight>=0&&weight<10000))throw error(400,'Weight must be a number');
  const image=str(body.image,200);
  if(image){
-  if(!/^assets\/photos\/products\/[\w./-]+$/.test(image)||image.includes('..'))throw error(400,'Choose an existing product photo.');
-  const photo=await env.ASSETS.fetch(new Request(new URL('/'+image,'https://assets.local')));
-  if(!photo.ok)throw error(400,'Choose an existing product photo.')
+  const key=photoKey(image);
+  if(key){
+   const photo=await fetch(rawPhotoUrl(key),{method:'HEAD'});
+   if(!photo.ok)throw error(400,'Choose an existing product photo.')
+  }
+  else{
+   if(!/^assets\/photos\/products\/[\w./-]+$/.test(image)||image.includes('..'))throw error(400,'Choose an existing product photo.');
+   const photo=await env.ASSETS.fetch(new Request(new URL('/'+image,'https://assets.local')));
+   if(!photo.ok)throw error(400,'Choose an existing product photo.')
+  }
  }
  return[name,category,str(body.metal,30),str(body.purity,20),weight,str(body.price,40)||null,image||null,str(body.alt,200)]
 }
 
 async function route(request,env,ctx){
  const url=new URL(request.url),path=url.pathname,method=request.method;
+ if(path.startsWith('/media/'))return photoResponse(request,env);
  if(!path.startsWith('/api/'))return env.ASSETS.fetch(request);
  if(method!=='GET'){
   const origin=request.headers.get('origin');
@@ -153,7 +288,7 @@ async function route(request,env,ctx){
  if(!path.startsWith('/api/admin/'))throw error(404,'Not found');
  if(!me)throw error(401,'Please sign in.');
  if(me.role!=='admin')throw error(403,'Admins only.');
- if(path==='/api/admin/photos'&&method==='POST')throw error(503,'Photo uploads are not enabled yet. Existing catalog photos are still available.');
+ if(path==='/api/admin/photos'&&method==='POST')return uploadPhoto(request,env,me);
  const body=method==='GET'?{}:await readJson(request);
  if(path==='/api/admin/categories'&&method==='POST'){
   const label=str(body.label,40,true),list=await categories(env);

@@ -9,6 +9,8 @@ const E=(s,m)=>Object.assign(new Error(m),{status:s});
 const send=(res,c,o)=>{res.writeHead(c,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(o))};
 const hits=new Map(),limited=(k,max,win)=>{const n=Date.now();const a=(hits.get(k)||[]).filter(t=>n-t<win);a.push(n);hits.set(k,a);return a.length>max};
 const sha=t=>crypto.createHash('sha256').update(t).digest('hex');
+const sameOrigin=(origin,host)=>{if(!origin||!host)return true;try{return new URL(origin).host===host}catch{return false}};
+const decodePath=pathname=>{try{return decodeURIComponent(pathname)}catch{throw E(400,'Malformed URL')}};
 const str=(v,max,req)=>{v=typeof v==='string'?v.trim():'';if(req&&!v)throw E(400,'Please fill in all required fields.');if(v.length>max)throw E(400,'One of the fields is too long.');return v};
 const readBody=req=>new Promise((ok,no)=>{let b='';req.on('data',c=>{b+=c;if(b.length>20000){no(E(413,'Too large'));req.destroy()}});req.on('end',()=>{try{ok(b?JSON.parse(b):{})}catch{no(E(400,'Bad JSON'))}})});
 const readUpload=req=>new Promise((ok,no)=>{const chunks=[];let size=0,failed=false;
@@ -86,7 +88,7 @@ const rate=v=>{if(v===''||v==null)return null;v=+v;if(!(v>=0&&v<1e8))throw E(400
 async function api(req,res,p){const m=req.method,ip=(PROD&&process.env.TRUST_PROXY?req.headers['x-forwarded-for']?.split(',')[0].trim():null)||req.socket.remoteAddress;let b={};
 const R=`${m} ${p}`,me=who(req);
 if(R==='POST /api/admin/photos'){
- const origin=req.headers.origin;if(origin&&new URL(origin).host!==req.headers.host)throw E(403,'Bad origin');
+ if(!sameOrigin(req.headers.origin,req.headers.host))throw E(403,'Bad origin');
  if(!me)throw E(401,'Please sign in.');if(me.role!=='admin')throw E(403,'Admins only.');
  if(limited('u'+me.id,20,DAY))throw E(429,'Photo upload limit reached. Try again tomorrow.');
  const photo=await readUpload(req);if(photo.length>MAX_PHOTO)throw E(413,'Photo must be 8 MB or smaller.');
@@ -97,7 +99,7 @@ if(R==='POST /api/admin/photos'){
  fs.writeFileSync(path.join(dir,name),safePhoto,{flag:'wx',mode:0o644});return send(res,201,{image:`assets/photos/uploads/${name}`})
 }
 if(m!=='GET'){if(!(req.headers['content-type']||'').startsWith('application/json'))throw E(415,'JSON only');
-const o=req.headers.origin;if(o&&new URL(o).host!==req.headers.host)throw E(403,'Bad origin');b=await readBody(req)}
+const o=req.headers.origin;if(!sameOrigin(o,req.headers.host))throw E(403,'Bad origin');b=await readBody(req)}
 if(R==='GET /api/rates')return send(res,200,JSON.parse(getS('rates')));
 if(R==='GET /api/products')return send(res,200,{categories:cats(),items:db.prepare('SELECT id,name,category,metal,purity,weight_tola,price,image,alt FROM products ORDER BY id').all()});
 if(R==='GET /api/me')return send(res,200,{user:me?.role==='admin'?me:null});
@@ -138,7 +140,7 @@ if(mm[1]==='requests'&&m==='PUT'){if(!STATUS.includes(b.status))throw E(400,'Bad
 if(mm[1]==='products'&&m==='PUT'){db.prepare('UPDATE products SET name=?,category=?,metal=?,purity=?,weight_tola=?,price=?,image=?,alt=? WHERE id=?').run(...prod(b),id);return send(res,200,{ok:true})}
 if(mm[1]==='products'&&m==='DELETE'){db.prepare('DELETE FROM products WHERE id=?').run(id);return send(res,200,{ok:true})}
 throw E(404,'Not found')}
-const OK=/^\/(index\.html|admin\.html|styles\.css|script\.js|admin\.js|robots\.txt|sitemap\.xml|assets\/[\w\-./]+|data\/site\.json)$/,
+const OK=/^\/(index\.html|admin\.html|styles\.css|script\.js|admin\.js|robots\.txt|sitemap\.xml|sitemap\.txt|assets\/[\w\-./]+|data\/site\.json)$/,
 TYPE={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.json':'application/json','.webp':'image/webp','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.mp4':'video/mp4','.webm':'video/webm','.txt':'text/plain','.xml':'application/xml'};
 function serve(req,res,p){if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405);return res.end()}
 if(p==='/')p='/index.html';const f=path.join(ROOT,p);
@@ -147,5 +149,5 @@ const e=path.extname(f),cache=e==='.js'?'no-store':e==='.html'||p==='/data/site.
 void refreshDailyRates();scheduleDailyRates();
 http.createServer(async(req,res)=>{res.setHeader('Content-Security-Policy',CSP);res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');
 try{if(PROD&&req.headers['x-forwarded-proto']!=='https')throw E(400,'HTTPS is required.');
-const p=new URL(req.url,'http://x').pathname;if(p.startsWith('/api/'))await api(req,res,p);else serve(req,res,decodeURIComponent(p))}
+const pathname=new URL(req.url,'http://x').pathname;const p=decodePath(pathname);if(p.startsWith('/api/'))await api(req,res,p);else serve(req,res,p)}
 catch(e){if(res.headersSent)return;if(e.status)send(res,e.status,{error:e.message});else{console.error(e);send(res,500,{error:'Server error'})}}}).listen(PORT,HOST,()=>console.log(`http://${HOST}:${PORT}`));
