@@ -2,7 +2,7 @@ import {latestPublishedRates,nepalDateKey} from '../shared/rates.js';
 
 const DAY=864e5,MAX_BODY=20_000,MAX_PHOTO=8*1024*1024,
 RATE_SOURCE='https://api.fenegosida.org/api/website/v1/Dashboard/today',
-RATE_SYNC_INTERVAL=6*60*60*1000,PASSWORD_ITERATIONS=120_000,
+RATE_SYNC_INTERVAL=6*60*60*1000,PASSWORD_ITERATIONS=100_000,
 GITHUB_REPOSITORY='kritesh798/kamana-jewellers',GITHUB_BRANCH='main',
 REQUEST_TYPES=['Custom design','Repair','Resizing','Polishing','Old-gold exchange'],
 REQUEST_STATUSES=['new','in progress','done','cancelled'];

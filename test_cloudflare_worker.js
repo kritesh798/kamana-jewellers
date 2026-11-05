@@ -80,8 +80,8 @@ try{
 
  assert.equal((await send('GET','/api/admin/requests')).status,401);
  const salt=randomBytes(16),password='cloudflare-test-password';
- const hash=pbkdf2Sync(password,salt,120_000,32,'sha256');
- const stored=`$pbkdf2-sha256$120000$${salt.toString('base64url')}$${hash.toString('base64url')}`;
+ const hash=pbkdf2Sync(password,salt,100_000,32,'sha256');
+ const stored=`$pbkdf2-sha256$100000$${salt.toString('base64url')}$${hash.toString('base64url')}`;
  db.prepare("INSERT INTO users(name,email,pass,role,created_at) VALUES(?,?,?,'admin',?)").run('Test Admin','admin@example.test',stored,today.toISOString());
  const login=await send('POST','/api/login',{email:'admin@example.test',password});
  assert.equal(login.status,200);

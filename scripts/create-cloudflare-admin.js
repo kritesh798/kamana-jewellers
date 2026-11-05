@@ -1,7 +1,7 @@
 import {randomBytes,pbkdf2 as pbkdf2Callback} from 'node:crypto';
 import {promisify} from 'node:util';
 
-const pbkdf2=promisify(pbkdf2Callback),ITERATIONS=120_000;
+const pbkdf2=promisify(pbkdf2Callback),ITERATIONS=100_000;
 const [emailArg,nameArg='Admin']=process.argv.slice(2),email=emailArg?.trim().toLowerCase(),password=process.env.ADMIN_PASSWORD;
 if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!password||password.length<10){
  console.error('Usage: set ADMIN_PASSWORD to 10+ characters, then run node scripts/create-cloudflare-admin.js you@example.com "Your Name".');
