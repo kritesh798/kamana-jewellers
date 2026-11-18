@@ -26,9 +26,27 @@ $('#rateForm').onsubmit=async e=>{e.preventDefault();try{say();await api('PUT','
 $('#reqs').onchange=async e=>{const s=e.target.closest('select[data-r]');if(s)try{say();await api('PUT','/api/admin/requests/'+s.dataset.r,{status:s.value})}catch(x){say(x)}};
 $('#pf').onsubmit=async e=>{e.preventDefault();const b=Object.fromEntries(new FormData(e.target)),id=b.id;delete b.id;
 try{say();$('#productSubmit').disabled=true;await(id?api('PUT','/api/admin/products/'+id,b):api('POST','/api/admin/products',b));$('#productMsg').textContent=id?'Product changes saved.':'Product added to the shop.';resetProductForm();await prods()}catch(x){say(x)}finally{$('#productSubmit').disabled=false}};
+const MAX_SIDE=2400;
+async function shrinkPhoto(file){
+ // Phone cameras (e.g. 50 MP) make huge files; re-encode to a clean, smaller JPEG before sending.
+ if(typeof createImageBitmap!=='function')return file;
+ let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'})}catch{try{bitmap=await createImageBitmap(file)}catch{return file}}
+ const scale=Math.min(1,MAX_SIDE/Math.max(bitmap.width,bitmap.height)),w=Math.round(bitmap.width*scale),h=Math.round(bitmap.height*scale);
+ const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(bitmap,0,0,w,h);bitmap.close?.();
+ const blob=await new Promise(ok=>canvas.toBlob(ok,'image/jpeg',.88));canvas.width=canvas.height=0;
+ return blob&&blob.size?new File([blob],'photo.jpg',{type:'image/jpeg'}):file}
+const sendPhoto=(form,onProgress)=>new Promise((ok,no)=>{const x=new XMLHttpRequest();x.open('POST','/api/admin/photos');x.timeout=180000;
+ x.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.round(e.loaded/e.total*100))};
+ x.onload=()=>{let d={};try{d=JSON.parse(x.responseText)}catch{}x.status>=200&&x.status<300?ok(d):no(new Error(d.error||`Upload failed (error ${x.status}). Please try again.`))};
+ x.onerror=()=>no(new Error('Upload failed: the internet connection dropped. Check Wi-Fi or mobile data and try again.'));
+ x.ontimeout=()=>no(new Error('Upload took too long and was stopped. Check the internet connection and try again.'));
+ x.send(form)});
 $('#uploadPhoto').onclick=async()=>{const file=$('#photoFile').files[0];if(!file){say(new Error('Choose a photo first, then select “Upload photo”.'));return}
-const form=new FormData();form.append('photo',file);
-try{say();$('#uploadPhoto').disabled=true;$('#photoMsg').textContent='Uploading photo…';const result=await api('POST','/api/admin/photos',form);$('#pf').elements.image.value=result.image;
+try{say();$('#uploadPhoto').disabled=true;$('#photoMsg').textContent='Preparing photo…';const small=await shrinkPhoto(file);
+const form=new FormData();form.append('photo',small,small.name||'photo.jpg');
+$('#photoMsg').textContent='Uploading photo… 0%';
+const result=await sendPhoto(form,p=>{$('#photoMsg').textContent=p<100?`Uploading photo… ${p}%`:'Saving photo… please wait.'});$('#pf').elements.image.value=result.image;
 previewPhoto(result.image);$('#photoMsg').textContent='Photo uploaded. Add the product name and category, then select “Add product”.'}
 catch(x){$('#photoMsg').textContent='Photo was not uploaded. Please try again.';say(x)}finally{$('#uploadPhoto').disabled=false}};
 $('#categoryForm').onsubmit=async e=>{e.preventDefault();const button=$('#categorySubmit');
